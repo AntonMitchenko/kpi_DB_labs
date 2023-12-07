@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Вибір бази даних</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        .container {
+            margin-top: 200px;
+        }
+
+        .database-select {
+            display: inline-block;
+            padding: 10px;
+            background-color: #f2f2f2;
+            border-radius: 5px;
+        }
+
+        .database-select select {
+            padding: 5px;
+            font-size: 16px;
+        }
+
+        .submit-button {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Виберіть базу даних</h1>
+        <form action="/select_database" method="post">
+            <div class="database-select">
+                <label for="database">База даних:</label>
+                <select id="database" name="database">
+                    <option value="mongo">MongoDB</option>
+                    <option value="postgres">PostgreSQL</option>
+                </select>
+            </div>
+            <div class="submit-button">
+                <button type="submit">Вибрати</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
