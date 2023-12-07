@@ -1,0 +1,151 @@
+version: "3"
+
+services:
+  db:
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - MY
+
+  app:
+#    profiles: ["csv"]
+    build:
+      context: ./Lab1_Funnel
+      dockerfile: Dockerfile
+    environment:
+      DB_HOST: db
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      RESULTS_TABLE_NAME: ${RESULTS_TABLE_NAME}
+      OUTPUT_FILE_NAME: ${OUTPUT_FILE_NAME}
+    volumes:
+      - ./Lab1_Funnel/data:/Lab1_Funnel/data
+    depends_on:
+      - db
+#      db:
+#        condition: service_healthy
+    networks:
+      - MY
+
+  app-migrate:
+#    profiles: ["migrate"]
+    build:
+      context: ./Lab2_Worker
+      dockerfile: Dockerfile
+    environment:
+      DB_HOST: db
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      RESULTS_TABLE_NAME: ${RESULTS_TABLE_NAME}
+    volumes:
+      - ./Lab2_Worker/results:/Lab2_Worker/results
+#      - for dev :
+      - ./Lab2_Worker/app.py:/Lab2_Worker/app.py
+      - ./Lab2_Worker/models.py:/Lab2_Worker/models.py
+      - ./Lab2_Worker/migrations:/Lab2_Worker/migrations
+    depends_on:
+      - db
+    networks:
+      - MY
+
+  web-app:
+    #profiles: ["web"]
+    build:
+      context: ./Lab3_Consumer
+      dockerfile: Dockerfile
+    environment:
+      DB_HOST: db
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      RESULTS_TABLE_NAME: ${RESULTS_TABLE_NAME}
+      REDIS_HOST: redis
+      MONGO_HOST: mongodb
+      MONGO_PORT: 27017
+      MONGO_DB: zno_result
+    restart: always
+    ports:
+      - "5000:5000"
+#    volumes:
+      #      - for dev :
+#      - ./web/app.py:/app/app.py
+#      - ./web/models.py:/app/models.py
+#      - ./web/templates:/app/templates
+    depends_on:
+      - db
+    networks:
+      - MY
+      - MY_mongo
+
+
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_USER}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    ports:
+      - "80:80"
+    depends_on:
+      - db
+    networks:
+      - MY
+
+  mongodb:
+#    profiles: ["mongo"]
+    image: mongo
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - MY_mongo
+
+  app-migrate-mongo:
+#    profiles: ["mongo-funnel"]
+    build: ./Lab5_MongoDB
+    depends_on:
+      - mongodb
+      - db
+#    volumes:
+#      - ./migrate-mongo:/app
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: ${DB_PORT}
+      POSTGRES_NAME: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      MONGO_HOST: mongodb
+      MONGO_PORT: 27017
+      MONGO_DB: zno_result
+      MONGO_USER: your_mongodb_user
+      MONGO_PASSWORD: your_mongodb_password
+    networks:
+      - MY
+      - MY_mongo
+
+volumes:
+  db_data:
+  mongodb_data:
+
+networks:
+  MY:
+  MY_mongo:
+
+
